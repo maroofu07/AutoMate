@@ -1,3 +1,4 @@
+
 package app.locationreply.mobile
 
 import android.Manifest
@@ -48,9 +49,14 @@ class LocationService : Service() {
         val targetNumber = intent?.getStringExtra("target_number")
 
         val powerManager = getSystemService(Context.POWER_SERVICE) as? PowerManager
-        wakeLock = powerManager?.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "LocationReply:GpsWakeLock")?.apply {
-            acquire(35000L) // 35 seconds max
-        }
+        wakeLock = powerManager
+            ?.newWakeLock(
+                PowerManager.PARTIAL_WAKE_LOCK,
+                "LocationReply:GpsWakeLock"
+            )
+            ?.apply {
+                acquire(35000L)
+            }
 
         startForeground(NOTIFICATION_ID, buildForegroundNotification())
 
@@ -66,29 +72,52 @@ class LocationService : Service() {
     }
 
     private fun fetchLocationAndReply(targetNumber: String) {
-        val hasFine = ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
-        val hasCoarse = ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+        val hasFine = ActivityCompat.checkSelfPermission(
+            this,
+            Manifest.permission.ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
+
+        val hasCoarse = ActivityCompat.checkSelfPermission(
+            this,
+            Manifest.permission.ACCESS_COARSE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
 
         if (!hasFine && !hasCoarse) {
             Log.e(TAG, "Location permission missing.")
             val bat = SmsDispatcher.getBatteryPercentage(this)
-            SmsDispatcher.sendSms(this, targetNumber, "Location permission not granted on device (Battery: $bat%)")
+            SmsDispatcher.sendSms(
+                this,
+                targetNumber,
+                "Location permission not granted on device (Battery: $bat%)"
+            )
             stopSelf()
             return
         }
 
-        val locManager = getSystemService(Context.LOCATION_SERVICE) as? LocationManager
-        val isGpsEnabled = locManager?.isProviderEnabled(LocationManager.GPS_PROVIDER) ?: false
+        val locManager =
+            getSystemService(Context.LOCATION_SERVICE) as? LocationManager
+
+        val isGpsEnabled =
+            locManager?.isProviderEnabled(LocationManager.GPS_PROVIDER) ?: false
 
         val mainHandler = Handler(Looper.getMainLooper())
-
         val cts = CancellationTokenSource()
-        val priority = if (hasFine) Priority.PRIORITY_HIGH_ACCURACY else Priority.PRIORITY_BALANCED_POWER_ACCURACY
+
+        val priority = if (hasFine) {
+            Priority.PRIORITY_HIGH_ACCURACY
+        } else {
+            Priority.PRIORITY_BALANCED_POWER_ACCURACY
+        }
+
         fusedLocationClient.getCurrentLocation(priority, cts.token)
             .addOnSuccessListener { location: Location? ->
                 if (location != null && !isReplied) {
                     isReplied = true
-                    sendLocationReply(targetNumber, location, sourceLabel = "Live GPS")
+                    sendLocationReply(
+                        targetNumber,
+                        location,
+                        sourceLabel = "Live GPS"
+                    )
                 }
             }
             .addOnFailureListener { e ->
@@ -103,26 +132,71 @@ class LocationService : Service() {
         }, 12000L)
     }
 
-    private fun fallbackToLastKnownLocation(targetNumber: String, isGpsEnabled: Boolean) {
-        val locManager = getSystemService(Context.LOCATION_SERVICE) as? LocationManager
-        val gpsLoc = try { locManager?.getLastKnownLocation(LocationManager.GPS_PROVIDER) } catch (e: SecurityException) { null }
-        val netLoc = try { locManager?.getLastKnownLocation(LocationManager.NETWORK_PROVIDER) } catch (e: SecurityException) { null }
-        val passiveLoc = try { locManager?.getLastKnownLocation(LocationManager.PASSIVE_PROVIDER) } catch (e: SecurityException) { null }
+    private fun fallbackToLastKnownLocation(
+        targetNumber: String,
+        isGpsEnabled: Boolean
+    ) {
+        val locManager =
+            getSystemService(Context.LOCATION_SERVICE) as? LocationManager
 
-        val bestLoc = listOfNotNull(gpsLoc, netLoc, passiveLoc).maxByOrNull { it.time }
+        val gpsLoc = try {
+            locManager?.getLastKnownLocation(LocationManager.GPS_PROVIDER)
+        } catch (e: SecurityException) {
+            null
+        }
+
+        val netLoc = try {
+            locManager?.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
+        } catch (e: SecurityException) {
+            null
+        }
+
+        val passiveLoc = try {
+            locManager?.getLastKnownLocation(LocationManager.PASSIVE_PROVIDER)
+        } catch (e: SecurityException) {
+            null
+        }
+
+        val bestLoc = listOfNotNull(gpsLoc, netLoc, passiveLoc)
+            .maxByOrNull { it.time }
+
         if (bestLoc != null) {
-            sendLocationReply(targetNumber, bestLoc, sourceLabel = "Last Known GPS (Offline)")
+            sendLocationReply(
+                targetNumber,
+                bestLoc,
+                sourceLabel = "Last Known GPS (Offline)"
+            )
         } else {
-            val statusNote = if (!isGpsEnabled) "GPS toggled OFF in phone settings" else "Satellites searching, mobile data OFF"
+            val statusNote = if (!isGpsEnabled) {
+                "GPS toggled OFF in phone settings"
+            } else {
+                "Satellites searching, mobile data OFF"
+            }
+
             val bat = SmsDispatcher.getBatteryPercentage(this)
-            SmsDispatcher.sendSms(targetNumber, statusNote, "Location request received ($statusNote, Battery: $bat%). Device coordinates not cached.")
+
+            SmsDispatcher.sendSms(
+                this,
+                targetNumber,
+                "Location request received ($statusNote, Battery: $bat%). Device coordinates not cached."
+            )
+
             stopSelf()
         }
     }
 
-    private fun sendLocationReply(targetNumber: String, location: Location, sourceLabel: String = "") {
+    private fun sendLocationReply(
+        targetNumber: String,
+        location: Location,
+        sourceLabel: String = ""
+    ) {
         val prefs = PrefsHelper.get(this)
-        val template = prefs.getString("reply_template", "My current location: {maps_url}") ?: "My current location: {maps_url}"
+
+        val template = prefs.getString(
+            "reply_template",
+            "My current location: {maps_url}"
+        ) ?: "My current location: {maps_url}"
+
         val includeBattery = prefs.getBoolean("include_battery", true)
 
         val lat = String.format("%.6f", location.latitude)
@@ -157,8 +231,10 @@ class LocationService : Service() {
                 "Location Reply Service",
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
-                description = "Runs briefly in foreground to fetch location for SMS reply"
+                description =
+                    "Runs briefly in foreground to fetch location for SMS reply"
             }
+
             val manager = getSystemService(NotificationManager::class.java)
             manager.createNotificationChannel(channel)
         }
@@ -175,8 +251,13 @@ class LocationService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
+
         if (wakeLock?.isHeld == true) {
-            try { wakeLock?.release() } catch (ignored: Exception) {}
+            try {
+                wakeLock?.release()
+            } catch (ignored: Exception) {
+                Log.w(TAG, "Failed to release wake lock", ignored)
+            }
         }
     }
 
