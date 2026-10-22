@@ -1,0 +1,91 @@
+[
+  {
+    "description": "Automated SMS GPS responder. Responds to keyword \"#LOCATE\" with device coordinates and Google Maps link. Runs continuously in background.",
+    "name": "LocationReply Flow",
+    "version": 1
+  },
+  {
+    "_id": 1,
+    "type": "com.llamalab.automate.block.FlowBeginningBlock",
+    "x": 2,
+    "y": 2,
+    "payload": {
+      "title": "Start"
+    },
+    "children": [
+      2
+    ]
+  },
+  {
+    "_id": 2,
+    "type": "com.llamalab.automate.block.SmsReceivedBlock",
+    "x": 2,
+    "y": 5,
+    "payload": {
+      "phone_number": null,
+      "message": null,
+      "sender_phone_number": "sender",
+      "received_message": "msg"
+    },
+    "children": [
+      3
+    ]
+  },
+  {
+    "_id": 3,
+    "type": "com.llamalab.automate.block.ExpressionDecisionBlock",
+    "x": 2,
+    "y": 8,
+    "payload": {
+      "expression": "contains(lowerCase(msg), lowerCase(\"#LOCATE\"))"
+    },
+    "children": [
+      4,
+      2
+    ]
+  },
+  {
+    "_id": 4,
+    "type": "com.llamalab.automate.block.LocationGetBlock",
+    "x": 2,
+    "y": 11,
+    "payload": {
+      "accuracy": 1,
+      "altitude": null,
+      "bearing": null,
+      "horizontal_accuracy": "acc",
+      "latitude": "lat",
+      "longitude": "lng",
+      "provider": 0,
+      "speed": null
+    },
+    "children": [
+      5
+    ]
+  },
+  {
+    "_id": 5,
+    "type": "com.llamalab.automate.block.BatteryLevelGetBlock",
+    "x": 2,
+    "y": 14,
+    "payload": {
+      "level": "bat"
+    },
+    "children": [
+      6
+    ]
+  },
+  {
+    "_id": 6,
+    "type": "com.llamalab.automate.block.SmsSendBlock",
+    "x": 2,
+    "y": 17,
+    "payload": {
+      "phone_number": "sender",
+      "message": "\"My location: https://maps.google.com/?q=\" ++ lat ++ \",\" ++ lng ++ \" (Acc: \" ++ round(acc) ++ \"m, Bat: \" ++ round(bat) ++ \"%)\""
+    },
+    "children": [
+      2
+    ]
+  }
+]
