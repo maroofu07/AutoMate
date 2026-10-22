@@ -386,14 +386,10 @@ fun LocationReplyApp(
                             )
                         }
                         Text(
-                            "If your phone says 'Permission required for auto reply' or greys out SMS/Location permissions:
-" +
-                            "1. Tap 'App Info Settings' above (or Settings > Apps > LocationReply).
-" +
-                            "2. In the top right corner, tap the 3 DOTS (⋮).
-" +
-                            "3. Tap 'Allow restricted settings' and enter your screen lock PIN.
-" +
+                            "If your phone says 'Permission required for auto reply' or greys out SMS/Location permissions:\n" +
+                            "1. Tap 'App Info Settings' above (or Settings > Apps > LocationReply).\n" +
+                            "2. In the top right corner, tap the 3 DOTS (⋮).\n" +
+                            "3. Tap 'Allow restricted settings' and enter your screen lock PIN.\n" +
                             "4. Return here and tap 'Grant SMS' & 'Grant GPS' below!",
                             fontSize = 12.sp,
                             lineHeight = 18.sp,
@@ -401,10 +397,8 @@ fun LocationReplyApp(
                         )
                         HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
                         Text(
-                            "Indian Brand Optimizations (Xiaomi / Realme / Oppo / Vivo / Samsung):
-" +
-                            "• In App Info, toggle ON 'Autostart' or 'Background startup'.
-" +
+                            "Indian Brand Optimizations (Xiaomi / Realme / Oppo / Vivo / Samsung):\n" +
+                            "• In App Info, toggle ON 'Autostart' or 'Background startup'.\n" +
                             "• Set Battery Saver to 'No restrictions' (so phone doesn't sleep SMS listener).",
                             fontSize = 11.sp,
                             lineHeight = 16.sp,
